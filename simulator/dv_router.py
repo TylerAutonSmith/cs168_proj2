@@ -123,9 +123,6 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stages 3, 6, 7, 8, 10 #####
-
-        
-
         for p in self.ports.get_all_ports():
             for host, entry in self.table.items(): 
                 self.send_route(p, entry.dst, entry.latency)
@@ -153,7 +150,10 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stages 4, 10 #####
+        if route_dst not in self.table:
+            self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL)
 
+        
         ##### End Stages 4, 10 #####
 
     def handle_link_up(self, port, latency):
