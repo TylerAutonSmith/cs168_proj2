@@ -93,7 +93,21 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stage 2 #####
+        #  print(packet.dst, "this is our current destination") 
+        destination = packet.dst
+        if destination not in self.table:
+            return
+        destEntry = self.table[destination]
 
+
+        if destEntry.latency >= INFINITY:
+            return
+        
+        
+        # entry = self.table[in_port]
+        # destination = entry.dst
+
+        self.send(packet, destEntry.port)
         ##### End Stage 2 #####
 
     def send_routes(self, force=False, single_port=None):
@@ -109,6 +123,7 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stages 3, 6, 7, 8, 10 #####
+        
 
         ##### End Stages 3, 6, 7, 8, 10 #####
 
