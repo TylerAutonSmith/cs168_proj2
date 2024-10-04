@@ -136,6 +136,15 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stages 5, 9 #####
+        for host, entry in self.table.items():
+            print(entry.dst, entry.expire_time)
+            if entry.expire_time == FOREVER:
+                continue
+            elif entry.expire_time == api.current_time():
+                self.table.pop(host)
+                
+
+
 
         ##### End Stages 5, 9 #####
 
@@ -156,9 +165,7 @@ class DVRouter(DVRouterBase):
         tenrty = self.table[route_dst]
 
         if port == tenrty.port or tenrty.latency > route_latency + self.ports.get_latency(port):
-            self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL)
-            print(self.table[route_dst])
-        
+            self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL)        
        
 
         
