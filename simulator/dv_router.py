@@ -148,7 +148,11 @@ class DVRouter(DVRouterBase):
                 willDelete.append(host)
         
         for h in willDelete:
-            self.table.pop(h)
+            if self.POISON_EXPIRED:
+                tentry = self.table[h]
+                self.table[h] = TableEntry(dst=h, port= tentry.port, latency= INFINITY, expire_time=api.current_time()+self.ROUTE_TTL)
+            else:
+                self.table.pop(h)
 
 
 
