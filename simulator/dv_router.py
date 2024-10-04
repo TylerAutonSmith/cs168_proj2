@@ -136,13 +136,13 @@ class DVRouter(DVRouterBase):
         """
         
         ##### Begin Stages 5, 9 #####
+        willDelete = []
         for host, entry in self.table.items():
-            print(entry.dst, entry.expire_time)
-            if entry.expire_time == FOREVER:
-                continue
-            elif entry.expire_time == api.current_time():
-                self.table.pop(host)
-                
+            if entry.expire_time < api.current_time():
+                willDelete.append(host)
+        
+        for h in willDelete:
+            self.table.pop(h)
 
 
 
