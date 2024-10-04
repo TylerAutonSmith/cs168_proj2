@@ -126,9 +126,13 @@ class DVRouter(DVRouterBase):
         for p in self.ports.get_all_ports():
             for host, entry in self.table.items(): 
                 tentry = self.table[host]
+                
                 if self.SPLIT_HORIZON and tentry.port == p:
                     continue
-                self.send_route(p, entry.dst, entry.latency)
+                if self.POISON_REVERSE and tentry.port == p:
+                    self.send_route(p, entry.dst, INFINITY)
+                else:
+                    self.send_route(p, entry.dst, entry.latency)
 
         ##### End Stages 3, 6, 7, 8, 10 #####
 
