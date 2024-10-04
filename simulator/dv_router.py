@@ -56,6 +56,7 @@ class DVRouter(DVRouterBase):
         # This is the table that contains all current routes
         self.table = Table()
         self.table.owner = self
+        self.history = {}
 
         ##### Begin Stage 10A #####
 
@@ -109,6 +110,13 @@ class DVRouter(DVRouterBase):
 
         self.send(packet, destEntry.port)
         ##### End Stage 2 #####
+    
+    def helper_routes(self, port, dest, late, ep):
+        self.send_route(port, dest, late)
+        self.history[ep]=  {dest : late}
+    
+    def helper_checker(self, entry):
+        return entry.port not in self.history or entry.dst not in self.history[entry.port] or self.history[entry.port][entry.dst] !=  entry.latency
 
     def send_routes(self, force=False, single_port=None):
         """
@@ -125,15 +133,23 @@ class DVRouter(DVRouterBase):
         ##### Begin Stages 3, 6, 7, 8, 10 #####
         for p in self.ports.get_all_ports():
             for host, entry in self.table.items(): 
-                
                 if self.SPLIT_HORIZON and entry.port == p:
                     continue
-                if entry.latency >= INFINITY or (self.POISON_REVERSE and entry.port == p):
-                    self.send_route(p, entry.dst, INFINITY)
-                else:    
-                    self.send_route(p, entry.dst, entry.latency)
+                if entry.latency >= INFINITY or (self.POISON_REVERSE and entry.port == p ):
+                        self.helper_routes(p, entry.dst, INFINITY, entry.port)
+                elif force:
+                    self.helper_routes(p, entry.dst, entry.latency, entry.port)
+                    continue
+                
+                else:
+                    if self.helper_checker(entry):
+                        self.helper_routes(p, entry.dst, entry.latency, entry.port)
+                    
 
         ##### End Stages 3, 6, 7, 8, 10 #####
+    
+    
+
 
     def expire_routes(self):
         """
@@ -171,12 +187,14 @@ class DVRouter(DVRouterBase):
         ##### Begin Stages 4, 10 #####
         if route_dst not in self.table:
             self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL)
+            self.send_routes(force=False)
         
         tenrty = self.table[route_dst]
 
         if port == tenrty.port or tenrty.latency > route_latency + self.ports.get_latency(port):
-            self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL)        
-       
+            self.table[route_dst] = TableEntry(dst=route_dst, port= port, latency=route_latency + self.ports.get_latency(port), expire_time=api.current_time()+self.ROUTE_TTL) 
+            self.send_routes(force=False)       
+            
 
         
         ##### End Stages 4, 10 #####
